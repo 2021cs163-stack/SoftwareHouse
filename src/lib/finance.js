@@ -18,18 +18,19 @@ export function subscriptionStatus(period, now = today()) {
 export const sum = (rows, field = 'amount') => rows.reduce((total,row) => total + cents(row[field]),0) / 100;
 export function projectBalance(project, receipts) {
   const received = sum(receipts.filter(row => row.project_id === project.id));
-  return { received, remaining: (cents(project.amount)-cents(received))/100, deposit: Math.ceil(cents(project.amount)/2)/100 };
+  return { received, remaining: (cents(project.amount)-cents(received))/100 };
 }
 export function totals(data) {
   const received = sum(data.receipts), expenses = sum(data.expenses), payouts = sum(data.payouts);
+  const invested = sum(data.investments || []);
   const netCents = cents(received)-cents(expenses);
-  return { received, expenses, payouts, net:netCents/100, cash:(netCents-cents(payouts))/100,
+  return { received, expenses, payouts, invested, net:netCents/100, cash:(netCents+cents(invested)-cents(payouts))/100,
     remaining:data.projects.reduce((n,p) => n+cents(projectBalance(p,data.receipts).remaining),0)/100,
     share:Math.floor(Math.max(netCents,0)/4)/100 };
 }
 export function partnerBalance(name,data) {
   const paid = sum(data.payouts.filter(p=>p.partner===name));
-  return { paid, share:totals(data).share, available:(cents(totals(data).share)-cents(paid))/100 };
+  return { paid, invested:sum((data.investments || []).filter(i=>i.partner===name)), share:totals(data).share, available:(cents(totals(data).share)-cents(paid))/100 };
 }
 export function currentSubscriptions(data) {
   return data.projects.filter(p=>p.type==='online' && p.status==='done').map(project => {
@@ -50,4 +51,4 @@ export function notifications(data) {
   }
   return alerts;
 }
-export function emptyData() { return {projects:[], receipts:[], expenses:[], payouts:[], subscriptions:[], events:[], reads:[]}; }
+export function emptyData() { return {investments:[], projects:[], receipts:[], expenses:[], payouts:[], subscriptions:[], events:[], reads:[]}; }

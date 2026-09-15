@@ -1,6 +1,12 @@
 export const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+export function externalLink(value,label) {
+ try { const url=new URL(value);if(!['https:','http:'].includes(url.protocol))return '—';
+ return '<a class="text-link" href="'+esc(url.href)+'" target="_blank" rel="noopener noreferrer">'+esc(label)+' ↗</a>';
+ } catch { return '—'; }
+}
 export function initials(name) { return name.split(' ').map(n=>n[0]).slice(0,2).join(''); }
 export const icons = {
+ investments:'<path d="M12 3v12m-4-4 4 4 4-4M4 15v6h16v-6"/>',
  dashboard:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
  projects:'<path d="M3 7h7l2-3h8a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
  expenses:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>',

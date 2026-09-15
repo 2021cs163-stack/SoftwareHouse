@@ -4,6 +4,8 @@ import path from 'node:path';
 import { readPublicConfig } from './public-config.mjs';
 const publicConfig = readPublicConfig();
 const root = path.resolve('dist');
+const port=Number(process.env.PORT||5173);
+if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid PORT.');
 const types = { '.html':'text/html; charset=utf-8', '.css':'text/css', '.js':'text/javascript', '.svg':'image/svg+xml' };
 http.createServer(async (req,res) => {
  try {
@@ -18,4 +20,4 @@ http.createServer(async (req,res) => {
   res.writeHead(200, { 'Content-Type':types[path.extname(file)] || 'application/octet-stream', 'Cache-Control':'no-store' });
   res.end(body);
  } catch { res.writeHead(404); res.end('Not found'); }
-}).listen(5173,'127.0.0.1',()=>console.log('Rayan workspace: http://localhost:5173'));
+}).listen(port,'127.0.0.1',()=>console.log('Rayan workspace: http://localhost:'+port));

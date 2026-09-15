@@ -1,7 +1,7 @@
 import { loginPage } from './pages/login.js';
 import { workspaceShell, PAGES } from './components/workspace.js';
 import { managementPage } from './pages/management.js';
-import { formContent } from './components/forms.js';
+import { formContent, projectDetails } from './components/forms.js';
 import { signIn, signOut } from './services/auth.js';
 import { fetchWorkspace, saveAction, markNotificationsRead } from './services/database.js';
 import { demoSnapshot, demoAction, demoRead, resetDemo } from './services/demo.js';
@@ -52,14 +52,24 @@ function openForm(action,element) {
  dialog.showModal();
 }
 function validateForm(payload,action) {
- if(['create_project','receive_payment','add_expense','pay_partner'].includes(action)) {
+ if(['receive_payment','add_expense','pay_partner','add_investment'].includes(action)) {
   if(!Number.isFinite(Number(payload.amount))||cents(payload.amount)<=0||Number(payload.amount)>999999999999.99)throw new Error('Enter a valid positive amount.');
   if(!/^\d+(\.\d{1,2})?$/.test(payload.amount))throw new Error('Use no more than two decimal places.');
  }
  if(payload.date&&payload.date>today())throw new Error('Transactions cannot be dated in the future.');
  if(action==='create_project') {
-  payload.deposit=payload.record_deposit?payload.deposit:'0';delete payload.record_deposit;
-  if(cents(payload.deposit)>cents(payload.amount))throw new Error('Deposit cannot exceed the contract amount.');
+
+  for(const key of ['paid_amount','remaining_amount']) {
+   if(!/^\d+(\.\d{1,2})?$/.test(payload[key]||'')||!Number.isFinite(Number(payload[key]))||Number(payload[key])>999999999999.99) throw new Error('Enter valid non-negative paid and remaining amounts, with up to two decimal places.');
+  }
+  const total=(cents(payload.paid_amount)+cents(payload.remaining_amount))/100;
+  if(total<=0||total>999999999999.99)throw new Error('Paid plus remaining must be greater than zero and within the amount limit.');
+  if(cents(payload.paid_amount)>0&&(!payload.paid_date||payload.paid_date>today()))throw new Error('Choose the date that the payment was received.');
+  for(const key of ['repo_url','deployment_url']) {
+   if(!payload[key])continue;
+   let url;try{url=new URL(payload[key]);}catch{throw new Error('Use a valid https:// or http:// project link.');}
+   if(!['http:','https:'].includes(url.protocol))throw new Error('Project links must use https:// or http://.');
+  }
  }
  if(action==='receive_payment') {
   const p=data.projects.find(p=>p.id===payload.project_id);
@@ -101,6 +111,7 @@ app.addEventListener('click',async event=>{
  const target=event.target.closest('[data-action]');if(!target)return;
  const action=target.dataset.action;
  if(action==='sign-out'){epoch++;const wasPreview=preview;user=null;preview=false;data=emptyData();loadError='';loading=false;desktopEnabled=false;desktopShown.clear();resetDemo();location.hash='login';render();if(!wasPreview)try{await signOut();}catch{}return;}
+ if(action==='project-details'){const project=data.projects.find(p=>p.id===target.dataset.id);if(project){const dialog=document.querySelector('#record-dialog');dialog.innerHTML=projectDetails(project,data);dialog.showModal();}return;}
  if(action==='refresh'){await load();return;}
  if(action==='close-dialog'){if(document.querySelector('#record-form [type=submit]')?.disabled)return;document.querySelector('#record-dialog').close();return;}
  if(action==='enable-notifications') {
@@ -121,26 +132,23 @@ app.addEventListener('click',async event=>{
   const csv=tables.map(t=>[...t.rows].map(r=>[...r.cells].map(c=>safe(c.innerText)).join(',')).join('\r\n')).join('\r\n\r\n');
   const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='rayan-'+currentPage()+'-'+today()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('History exported.');return;
  }
- if(['create_project','add_expense','receive_payment','pay_partner','complete_project','renew_subscription'].includes(action))openForm(action,target);
+ if(['create_project','add_expense','receive_payment','pay_partner','complete_project','renew_subscription','add_investment'].includes(action))openForm(action,target);
 });
 app.addEventListener('input',event=>{
  if(event.target.id==='record-search'){const selection=event.target.selectionStart;filters.search=event.target.value;render();const input=document.querySelector('#record-search');input.focus();try{input.setSelectionRange(selection,selection);}catch{}}
- if(event.target.name==='amount'&&event.target.form?.dataset.kind==='create_project'){
-  const deposit=event.target.form.elements.deposit;if(deposit&&!deposit.disabled)deposit.value=(Math.ceil(cents(event.target.value)/2)/100).toFixed(2);
+ if(['paid_amount','remaining_amount'].includes(event.target.name)&&event.target.form?.dataset.kind==='create_project'){
+  const form=event.target.form;
+  document.querySelector('#contract-total').textContent='Contract total: '+money((cents(form.elements.paid_amount.value)+cents(form.elements.remaining_amount.value))/100);
+  form.elements.paid_date.required=cents(form.elements.paid_amount.value)>0;
  }
 });
 app.addEventListener('change',event=>{
  const form=event.target.form;if(!form)return;
- if(event.target.name==='record_deposit') {
-  const fields=document.querySelector('#deposit-fields');fields.hidden=!event.target.checked;
-  fields.querySelectorAll('input').forEach(i=>{i.disabled=!event.target.checked;});
-  form.elements.deposit.value=(Math.ceil(cents(form.elements.amount.value)/2)/100).toFixed(2);
- }
  if(event.target.name==='project_id'&&form.dataset.kind==='receive_payment'){
   const p=data.projects.find(p=>p.id===event.target.value);
   if(p){const remaining=projectBalance(p,data.receipts).remaining;document.querySelector('#balance-hint').textContent='Outstanding: '+money(remaining);form.elements.amount.value=remaining.toFixed(2);}
  }
- if(event.target.name==='partner')document.querySelector('#balance-hint').textContent='Available share: '+money(partnerBalance(event.target.value,data).available)+' · Business cash: '+money(totals(data).cash);
+ if(event.target.name==='partner'&&form.dataset.kind==='pay_partner')document.querySelector('#balance-hint').textContent='Available share: '+money(partnerBalance(event.target.value,data).available)+' · Business cash: '+money(totals(data).cash);
 });
 app.addEventListener('cancel',event=>{if(document.querySelector('#record-form [type=submit]')?.disabled)event.preventDefault();},true);
 window.addEventListener('hashchange',()=>{if(!document.querySelector('#record-form [type=submit]')?.disabled)render();});
