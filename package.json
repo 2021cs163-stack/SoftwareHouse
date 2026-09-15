@@ -1,1 +1,18 @@
-{"name":"rayan-tech-workspace","version":"1.0.0","private":true,"type":"module","scripts":{"dev":"node scripts/serve.mjs","start":"node scripts/serve.mjs","check":"node scripts/check.mjs"}}
+{
+  "name": "rayan-tech-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "start": "node scripts/serve.mjs",
+    "check": "node scripts/check.mjs",
+    "configure": "node scripts/public-config.mjs --write",
+    "test": "node scripts/test-workspace.mjs",
+    "test:browser": "node scripts/test-browser.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.63.0"
+  }
+}
