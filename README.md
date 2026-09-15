@@ -1,6 +1,6 @@
 # Rayan Tech Solution management system
 
-A shared workspace for four partners, with a blue-and-cyan login and animated circuit-board background.
+A business workspace with one administrator login and four financial partners, with a blue-and-cyan login and animated circuit-board background.
 
 ## Run locally
 
@@ -16,9 +16,9 @@ For a static deployment, run npm run configure to generate the public browser se
 ## Set up Supabase
 
 1. Run supabase/migrations/202609150001_workspace.sql once in the SQL Editor.
-2. Create the four email/password accounts in Authentication → Users.
-3. Replace the four email placeholders in supabase/02_approve_partners.sql, then run it.
-4. Sign in with an approved account.
+2. Create ONE email/password account in Authentication > Users.
+3. Replace YOUR_LOGIN_EMAIL in supabase/03_single_user_access.sql and run it.
+4. Sign in with that account. The new script revokes previous accounts' workspace access while preserving all records.
 
 The migration and account setup have been tested locally with PostgreSQL. Applying them to the real Supabase project is a separate setup step. See supabase/README.md for security and accounting details.
 
@@ -42,7 +42,7 @@ Project creation does not assume money was received. Check the deposit box to re
 
 Subscription expiry uses calendar anniversaries, clamping February 29 to February 28. Date rules use Asia/Kabul. A renewal is available one month before expiry; early renewal starts at the old expiry, late renewal starts today. Renewal does not record a fee or payment.
 
-All four approved partners have equal access. This version does not delete or edit financial history. Sessions are held in memory and refreshed while the app is open; page reload requires sign-in. Preview is an isolated, clearly labeled in-memory sandbox; its records are never sent to Supabase and reset on exit or reload.
+Only one approved administrator account has access. The four partners are payment records, not login accounts. This version does not delete or edit financial history. Sessions are held in memory and refreshed while the app is open; page reload requires sign-in. Preview is an isolated, clearly labeled in-memory sandbox; its records are never sent to Supabase and reset on exit or reload.
 
 Desktop notifications require permission and an open app. Background push and email are not configured.
 
@@ -61,7 +61,7 @@ dist/
     services/              Authentication, database calls, isolated preview
 supabase/
   migrations/              Versioned SQL migrations
-  02_approve_partners.sql   Partner account allowlist setup
+  03_single_user_access.sql Single administrator access setup
 scripts/                   Local server, public configuration, checks and tests
 
 ## Validation
