@@ -1,0 +1,1 @@
+export const brand = `<a class="brand" href="#login" aria-label="Rayan Tech Solution home"><span class="brand-mark">R<span></span></span><span>RAYAN<span class="brand-sub">TECH SOLUTION</span></span></a>`;
