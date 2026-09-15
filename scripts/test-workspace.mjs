@@ -19,6 +19,16 @@ console.log('PASS: full migration executes on PostgreSQL.');
 const member='00000000-0000-4000-8000-000000000001', stranger='00000000-0000-4000-8000-000000000002';
 await db.query('insert into auth.users(id,email) values ($1,$2),($3,$4)',[member,'test-member@example.invalid',stranger,'test-stranger@example.invalid']);
 await db.query('insert into rayan_private.members(user_id,display_name) values ($1,$2)',[member,PARTNERS[0]]);
+
+await db.query('insert into rayan_private.members(user_id,display_name) values ($1,$2)',[stranger,PARTNERS[1]]);
+const singleUserSql=await readFile(new URL('../supabase/03_single_user_access.sql',import.meta.url),'utf8');
+await db.exec(singleUserSql.replaceAll('YOUR_LOGIN_EMAIL','test-member@example.invalid'));
+await db.exec(singleUserSql.replaceAll('YOUR_LOGIN_EMAIL','test-member@example.invalid'));
+assert.equal((await db.query('select count(*)::int as n from rayan_private.members where active')).rows[0].n,1);
+assert.equal((await db.query('select count(*)::int as n from rayan_private.partners')).rows[0].n,4);
+await assert.rejects(db.query('update rayan_private.members set active=true where user_id=$1',[stranger]),/duplicate key/);
+console.log('PASS: one active login enforced, other former member denied, four financial partners preserved, setup safely reruns.');
+
 await db.exec('set role anon');
 await assert.rejects(db.query('select public.rayan_snapshot()'),/permission denied/);
 await db.exec('reset role; set role authenticated');

@@ -2,13 +2,13 @@
 
 1. Open your Supabase project → SQL Editor → New query.
 2. Run the entire `migrations/202609150001_workspace.sql` file once.
-3. Create the four login accounts in Authentication → Users (email/password).
-4. Replace all four email placeholders in `02_approve_partners.sql`, then run it.
+3. Create ONE login account in Authentication > Users (email/password).
+4. Replace `YOUR_LOGIN_EMAIL` in `03_single_user_access.sql`, then run it. Do not run the old four-partner approval script.
 5. Put your project URL and public publishable key in the root `.env`, restart `npm run dev`, and sign in.
 
 The first script creates a dedicated private schema and three authenticated RPCs. It does not change existing application tables. Keep this applied migration immutable; later schema changes should be new migration files.
 
-All four approved accounts share the same company records and permissions. Other signed-in users and anonymous users cannot read or change company data. Do not add the private schema to Supabase's exposed schemas. Never put a service-role key in the frontend.
+Only the selected administrator account can access company records. The four partners remain financial records and do not need accounts. The single-user setup revokes previous accounts' access without deleting records or Auth users, and enforces at most one active login. Other signed-in users and anonymous users cannot read or change company data. Do not add the private schema to Supabase's exposed schemas. Never put a service-role key in the frontend.
 
 Amounts use AFN with two decimal places. Received payments are recorded explicitly; a project does not automatically create cash. Optionally record the initial deposit in the project form. Every mutation is transactional and has a request ID to prevent a retried save from being counted twice. Concurrent receipts and partner payouts are serialized and checked in the database.
 

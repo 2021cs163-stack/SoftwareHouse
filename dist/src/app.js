@@ -22,7 +22,7 @@ function render() {
  const page=currentPage();
  if(page!==lastPage) {filters={search:'',status:'all'};lastPage=page;}
  const content=loading?'<div class="load-state"><span class="loading-ring"></span><h1>Loading your workspace…</h1></div>':
- loadError?'<div class="load-state"><h1>Workspace unavailable</h1><p>'+esc(loadError)+'</p><p class="muted">For first-time setup, run the migration and approve the partner accounts in Supabase.</p><button class="secondary" data-action="refresh">'+icon('refresh')+'Try again</button></div>':managementPage(page,data,filters);
+ loadError?'<div class="load-state"><h1>Workspace unavailable</h1><p>'+esc(loadError)+'</p><p class="muted">For first-time setup, run the migration and configure your single administrator account in Supabase.</p><button class="secondary" data-action="refresh">'+icon('refresh')+'Try again</button></div>':managementPage(page,data,filters);
  app.innerHTML=workspaceShell(page,content,data,preview,user?.email);
  document.title=PAGES[page]+' | Rayan Tech Solution';
 }
