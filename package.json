@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
-    "configure": "node scripts/public-config.mjs --write",
+    "configure": "node scripts/build.mjs --configure",
     "test": "node scripts/test-workspace.mjs",
     "test:browser": "node scripts/test-browser.mjs"
   },

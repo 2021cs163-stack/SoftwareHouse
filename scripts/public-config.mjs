@@ -15,8 +15,9 @@ export function readPublicConfig() {
  }
  return {url:url.replace(/\/$/,''),publishableKey};
 }
-if(process.argv.includes('--write')) {
+export async function writePublicConfig() {
  const config=readPublicConfig();
  await writeFile('dist/src/config.js','// Generated public browser settings. Never use a secret or service-role key.\nexport const supabaseConfig = '+JSON.stringify(config)+';\n');
  console.log('Public browser configuration prepared. Credentials are not printed.');
 }
+if(process.argv.includes('--write')) await writePublicConfig();

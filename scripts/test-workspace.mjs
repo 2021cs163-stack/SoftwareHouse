@@ -1,7 +1,7 @@
 import { PGlite } from '@electric-sql/pglite';
 import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import { PARTNERS, totals, partnerBalance, projectBalance, shiftMonths, subscriptionStatus, notifications, emptyData } from '../dist/src/lib/finance.js';
+import { PARTNERS, totals, partnerBalance, projectBalance, shiftMonths, subscriptionStatus, notifications, emptyData } from '../src/lib/finance.js';
 
 assert.equal(shiftMonths('2024-02-29',12),'2025-02-28');
 assert.equal(shiftMonths('2026-03-31',-1),'2026-02-28');
@@ -22,8 +22,9 @@ await db.query('insert into rayan_private.members(user_id,display_name) values (
 
 await db.query('insert into rayan_private.members(user_id,display_name) values ($1,$2)',[stranger,PARTNERS[1]]);
 const singleUserSql=await readFile(new URL('../supabase/03_single_user_access.sql',import.meta.url),'utf8');
-await db.exec(singleUserSql.replaceAll('YOUR_LOGIN_EMAIL','test-member@example.invalid'));
-await db.exec(singleUserSql.replaceAll('YOUR_LOGIN_EMAIL','test-member@example.invalid'));
+const configuredSingleUserSql=singleUserSql.replaceAll('admin@rayan.af','test-member@example.invalid').replaceAll('YOUR_LOGIN_EMAIL','test-member@example.invalid');
+await db.exec(configuredSingleUserSql);
+await db.exec(configuredSingleUserSql);
 assert.equal((await db.query('select count(*)::int as n from rayan_private.members where active')).rows[0].n,1);
 assert.equal((await db.query('select count(*)::int as n from rayan_private.partners')).rows[0].n,4);
 await assert.rejects(db.query('update rayan_private.members set active=true where user_id=$1',[stranger]),/duplicate key/);
