@@ -48,6 +48,7 @@ function showDesktopAlerts() {
 function openForm(action,element) {
  if(loading||loadError)return;
  const dialog=document.querySelector('#record-dialog');
+ if(dialog.open)dialog.close();
  dialog.innerHTML=formContent(action,data,element?.dataset.id,element?.dataset.partner);
  dialog.showModal();
 }
@@ -65,6 +66,14 @@ function validateForm(payload,action) {
   const total=(cents(payload.paid_amount)+cents(payload.remaining_amount))/100;
   if(total<=0||total>999999999999.99)throw new Error('Paid plus remaining must be greater than zero and within the amount limit.');
   if(cents(payload.paid_amount)>0&&(!payload.paid_date||payload.paid_date>today()))throw new Error('Choose the date that the payment was received.');
+  for(const key of ['repo_url','deployment_url']) {
+   if(!payload[key])continue;
+   let url;try{url=new URL(payload[key]);}catch{throw new Error('Use a valid https:// or http:// project link.');}
+   if(!['http:','https:'].includes(url.protocol))throw new Error('Project links must use https:// or http://.');
+  }
+ }
+
+ if(action==='edit_project') {
   for(const key of ['repo_url','deployment_url']) {
    if(!payload[key])continue;
    let url;try{url=new URL(payload[key]);}catch{throw new Error('Use a valid https:// or http:// project link.');}
@@ -132,7 +141,7 @@ app.addEventListener('click',async event=>{
   const csv=tables.map(t=>[...t.rows].map(r=>[...r.cells].map(c=>safe(c.innerText)).join(',')).join('\r\n')).join('\r\n\r\n');
   const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='rayan-'+currentPage()+'-'+today()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('History exported.');return;
  }
- if(['create_project','add_expense','receive_payment','pay_partner','complete_project','renew_subscription','add_investment'].includes(action))openForm(action,target);
+ if(['create_project','edit_project','add_expense','receive_payment','pay_partner','complete_project','renew_subscription','add_investment'].includes(action))openForm(action,target);
 });
 app.addEventListener('input',event=>{
  if(event.target.id==='record-search'){const selection=event.target.selectionStart;filters.search=event.target.value;render();const input=document.querySelector('#record-search');input.focus();try{input.setSelectionRange(selection,selection);}catch{}}

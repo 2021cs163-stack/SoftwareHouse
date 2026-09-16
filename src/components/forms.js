@@ -20,11 +20,29 @@ export function formContent(action,data,selectedId,selectedPartner) {
    field('Start date','start_date','date','value="'+today()+'"')+
    '<label class="form-field">Repository link<input name="repo_url" type="url" maxlength="2000" placeholder="https://github.com/..."></label>'+
    '<label class="form-field full-width">Deployment link<input name="deployment_url" type="url" maxlength="2000" placeholder="https://your-project.com"></label>'+
-   '<label class="form-field full-width">Project details<textarea name="details" maxlength="4000" rows="3" placeholder="Scope, requirements, or useful notes"></textarea></label>'+
+   '<label class="form-field full-width">Project details<textarea name="details" aria-label="Project details" maxlength="4000" rows="3" placeholder="Scope, requirements, or useful notes"></textarea></label>'+
    field('Paid money (AFN)','paid_amount','number','min="0" max="999999999999.99" step="0.01" value="0"')+
    field('Remaining money (AFN)','remaining_amount','number','min="0" max="999999999999.99" step="0.01" value="0"')+
    '<div id="contract-total" class="form-hint full-width" role="status">Contract total: '+money(0)+'</div>'+
    '<label class="form-field">Payment received on<input name="paid_date" type="date" value="'+today()+'" max="'+today()+'"><small>Required only when paid money is above zero.</small></label>';
+
+ } else if(action==='edit_project') {
+  title='Edit project';description='Update the details for this project.';submit='Save changes';
+  const input=(label,name,type='text',extra='')=>field(label,name,type,'value="'+esc(project[name]||'')+'" '+extra);
+  const optional=(label,name,type='text',max=200)=>'<label class="form-field">'+label+'<input name="'+name+'" type="'+type+'" maxlength="'+max+'" value="'+esc(project[name]||'')+'"></label>';
+  const balance=projectBalance(project,data.receipts);
+  body='<input type="hidden" name="project_id" value="'+esc(project.id)+'">'+
+   input('Project name','name','text','maxlength="200"')+
+   input('Contract ID','contract_id','text','maxlength="100"')+
+   input('Client / company','client','text','maxlength="200"')+
+   optional('Client contact','client_contact')+
+   (project.status==='done'?'<input type="hidden" name="type" value="'+esc(project.type)+'"><div class="form-hint">Project type: '+esc(project.type)+' · Completed</div>':
+    select('Project type','type',option('online','Online',project.type==='online')+option('offline','Offline',project.type==='offline')))+
+   select('Responsible partner','responsible',PARTNERS.map(p=>option(p,p,p===project.responsible)).join(''))+
+   input('Start date','start_date','date',project.completed_on?'max="'+project.completed_on+'"':'')+
+   optional('Repository link','repo_url','url',2000)+optional('Deployment link','deployment_url','url',2000)+
+   '<label class="form-field full-width">Project details<textarea name="details" aria-label="Project details" maxlength="4000" rows="4">'+esc(project.details||'')+'</textarea></label>'+
+   '<div class="form-hint full-width">Paid: '+money(balance.received)+' · Remaining: '+money(balance.remaining)+'<br>Record new client payments from Received payments.</div>';
  } else if(action==='add_investment') {
   title='Record partner investment';description='Add capital contributed by a partner. This increases business cash and is kept separate from client income and profit.';submit='Save investment';
   body='<div class="full-width">'+select('Partner','partner',PARTNERS.map(p=>option(p,p,p===selectedPartner)).join(''))+'</div>'+
@@ -65,5 +83,5 @@ export function projectDetails(project,data) {
  item('Start date',dateLabel(project.start_date))+item('Status',project.status==='done'?'Done':'Ongoing')+
  item('Contract total',money(project.amount))+item('Paid money',money(balance.received))+item('Remaining money',money(balance.remaining))+
  '</dl><div class="project-notes"><h3>Project details</h3><p>'+esc(project.details||'No additional details.')+'</p></div>'+
- '<div class="dialog-footer"><button class="secondary" data-action="close-dialog">Close</button></div>';
+ '<div class="dialog-footer"><button class="secondary" data-action="close-dialog">Close</button><button class="primary" data-action="edit_project" data-id="'+esc(project.id)+'">Edit project</button></div>';
 }

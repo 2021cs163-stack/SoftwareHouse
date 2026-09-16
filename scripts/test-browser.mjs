@@ -56,12 +56,19 @@ await dialog.getByRole('button',{name:'Record payout'}).click();
 await page.locator('.partner-card').first().getByText('AFN 5,000.00',{exact:true}).first().waitFor();
 await page.getByRole('link',{name:'Projects',exact:true}).click();
 
+
+await page.getByRole('button',{name:'Edit',exact:true}).click();
+dialog=page.getByRole('dialog');
+assert.equal(await dialog.getByLabel('Project name').inputValue(),'Atlas client portal');
+assert.equal(await dialog.getByLabel('Client contact').inputValue(),'+93 700 123 456');
+await dialog.getByLabel('Project details',{exact:true}).fill('Updated scope and delivery notes.');
+await dialog.getByRole('button',{name:'Save changes',exact:true}).click();
 await page.getByRole('button',{name:'Details',exact:true}).click();
 dialog=page.getByRole('dialog');
 await dialog.getByText('+93 700 123 456',{exact:true}).waitFor();
 assert.equal(await dialog.getByRole('link',{name:'Open repository'}).getAttribute('href'),'https://github.com/example/atlas');
 assert.equal(await dialog.getByRole('link',{name:'Open deployment'}).getAttribute('href'),'https://atlas.example.com/');
-await dialog.getByText('A customer portal with project tracking.',{exact:true}).waitFor();
+await dialog.getByText('Updated scope and delivery notes.',{exact:true}).waitFor();
 await dialog.getByRole('button',{name:'Close',exact:true}).first().click();
 await page.locator('tbody').getByRole('button',{name:'Done',exact:true}).click();
 dialog=page.getByRole('dialog');
@@ -93,5 +100,5 @@ await page.getByRole('button',{name:'New project'}).click();
 await page.screenshot({path:'artifacts/qa/project-form-mobile.png',fullPage:true});
 await page.getByRole('button',{name:'Cancel',exact:true}).click();
 assert.deepEqual(errors,[]);
-console.log('PASS: manual paid and remaining amounts, project contact/details/links, investments and history, expense, four partner cards, capped payouts, completion, subscription, overpayment rejection, final receipt, desktop and mobile layouts; no browser runtime errors.');
+console.log('PASS: prefilled project editing and saved notes; manual paid and remaining amounts, project contact/details/links, investments and history, expense, four partner cards, capped payouts, completion, subscription, overpayment rejection, final receipt, desktop and mobile layouts; no browser runtime errors.');
 await browser.close();

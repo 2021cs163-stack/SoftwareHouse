@@ -34,6 +34,7 @@ console.log('PASS: one active login enforced, other former member denied, four f
 const legacyId='00000000-0000-4000-8000-000000000099';
 await db.query("insert into rayan_private.projects(id,contract_id,name,client,type,responsible,start_date,amount,created_by) values ($1,'LEGACY','Existing project','Legacy client','offline',$2,'2024-01-01',1234,$3)",[legacyId,PARTNERS[0],member]);
 await db.exec(await readFile(new URL('../supabase/migrations/202609150002_project_details_investments.sql',import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('../supabase/migrations/202609150003_edit_projects.sql',import.meta.url),'utf8'));
 const legacy=(await db.query('select * from rayan_private.projects where id=$1',[legacyId])).rows[0];
 assert.equal(Number(legacy.amount),1234);assert.equal(legacy.client_contact,'');
 await db.query('delete from rayan_private.projects where id=$1',[legacyId]);
@@ -112,6 +113,32 @@ await assert.rejects(action('create_project',{...payload,contract_id:'INVALID',p
 await assert.rejects(action('create_project',{...payload,contract_id:'INVALID',repo_url:'javascript:alert(1)'}),/check constraint/);
 console.log('PASS: investments increase cash but not profits; duplicates and invalid capital rejected; arbitrary/manual/full/unpaid balances and safe project links.');
 
+await db.exec('reset role');
+
+await db.exec('set role authenticated');
+data=await snapshot();
+const original=data.projects.find(p=>p.id===project.id);
+const beforeEdit=totals(data),receiptCount=data.receipts.length,terms=JSON.stringify(data.subscriptions);
+const editId=crypto.randomUUID();
+const editPayload={...original,name:'Updated project',client_contact:'+93 711 222 333',details:'Added delivery notes',repo_url:'https://github.com/example/updated'};
+const updateProject=(payload,id=crypto.randomUUID())=>db.query('select public.rayan_update_project($1,$2)',[JSON.stringify(payload),id]);
+await updateProject({...editPayload,project_id:original.id},editId);
+await updateProject({...editPayload,project_id:original.id},editId);
+data=await snapshot();
+const edited=data.projects.find(p=>p.id===original.id);
+assert.equal(edited.name,'Updated project');assert.equal(edited.details,'Added delivery notes');
+assert.equal(edited.client_contact,'+93 711 222 333');assert.equal(edited.repo_url,editPayload.repo_url);
+assert.deepEqual(totals(data),beforeEdit);assert.equal(data.receipts.length,receiptCount);
+assert.equal(JSON.stringify(data.subscriptions),terms);assert.equal(edited.status,original.status);
+assert.equal(data.events.filter(e=>e.id===editId).length,1);
+await assert.rejects(updateProject({...editPayload,project_id:original.id,type:'offline'}),/completed project/);
+await assert.rejects(updateProject({...editPayload,project_id:original.id,start_date:'2999-01-01'}),/completion date/);
+await assert.rejects(updateProject({...editPayload,project_id:original.id,repo_url:'javascript:alert(1)'}),/check constraint/);
+await assert.rejects(updateProject({...editPayload,project_id:original.id,contract_id:'TEST-002'}),/duplicate key/);
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[stranger]);
+await assert.rejects(updateProject({...editPayload,project_id:original.id}),/not approved/);
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[member]);
+console.log('PASS: edit project details, duplicate retry, preserved money/subscriptions, and access/validation safeguards.');
 await db.exec('reset role');
 await db.query('update rayan_private.members set active=false where user_id=$1',[member]);
 await db.exec('set role authenticated');

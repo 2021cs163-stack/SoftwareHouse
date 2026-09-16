@@ -73,3 +73,5 @@ npm test — local PostgreSQL migration, access control, accounting, and subscri
 npm run test:browser — browser workflow and responsive checks, with the local server running. Uses an installed Edge or Chrome; otherwise install Playwright Chromium.
 # SoftwareHouse
 
+
+Project editing: apply `supabase/migrations/202609150003_edit_projects.sql`, then use **Edit** beside a project to change its details, contacts, links, responsible partner and start date. Ongoing project types can also be changed. Edits are recorded in activity history.

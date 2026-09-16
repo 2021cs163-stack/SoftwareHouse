@@ -19,3 +19,6 @@ Online project completion starts the first subscription term, expiring on its ca
 In-app alerts recalculate on load and every minute while the app is open. Read state is saved per user. Optional desktop notifications require browser permission and an open app. Closed-browser push/email delivery is not configured.
 
 Source references: [Supabase database functions](https://supabase.com/docs/guides/database/functions), [API security](https://supabase.com/docs/guides/api/securing-your-api).
+
+
+For project editing, apply `migrations/202609150003_edit_projects.sql` after migration 002. Use Edit in the project list or Edit project in its Details view. Financial entries are handled by the payment ledger; completed project types and subscription dates are preserved.
