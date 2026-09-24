@@ -5,6 +5,7 @@ const amountField=(label='Amount',value='',extra='')=>field(label+' (AFN)','amou
 const dateField=(label='Date')=>field(label,'date','date','value="'+today()+'" max="'+today()+'"');
 const select=(label,name,options)=>'<label class="form-field">'+label+'<select name="'+name+'" aria-label="'+esc(label)+'" required>'+options+'</select></label>';
 const option=(value,label,selected)=>'<option value="'+esc(value)+'" '+(selected?'selected':'')+'>'+esc(label)+'</option>';
+const subscriptionField=(project)=>'<label class="form-field" id="subscription-amount-field" '+(project?.type==='offline'?'hidden':'')+'>Year subscription amount (AFN)<input name="annual_subscription_amount" type="number" min="0" max="999999999999.99" step="0.01" value="'+esc(project?.annual_subscription_amount??'')+'" '+(project?.type==='offline'?'disabled':'required')+'><small>Annual renewal fee. Enter 0 for free renewal.</small></label>';
 export function formContent(action,data,selectedId,selectedPartner) {
  const project=data.projects.find(p=>p.id===selectedId);
  let title='',description='',body='',submit='Save record';
@@ -16,7 +17,7 @@ export function formContent(action,data,selectedId,selectedPartner) {
    field('Client / company','client','text','maxlength="200"')+
    '<label class="form-field">Client contact<input name="client_contact" maxlength="200" placeholder="Phone number or email"></label>'+
    select('Project type','type',option('online','Online',true)+option('offline','Offline'))+
-   select('Responsible partner','responsible',PARTNERS.map(p=>option(p,p)).join(''))+
+   subscriptionField()+select('Responsible partner','responsible',PARTNERS.map(p=>option(p,p)).join(''))+
    field('Start date','start_date','date','value="'+today()+'"')+
    '<label class="form-field">Repository link<input name="repo_url" type="url" maxlength="2000" placeholder="https://github.com/..."></label>'+
    '<label class="form-field full-width">Deployment link<input name="deployment_url" type="url" maxlength="2000" placeholder="https://your-project.com"></label>'+
@@ -38,7 +39,7 @@ export function formContent(action,data,selectedId,selectedPartner) {
    optional('Client contact','client_contact')+
    (project.status==='done'?'<input type="hidden" name="type" value="'+esc(project.type)+'"><div class="form-hint">Project type: '+esc(project.type)+' · Completed</div>':
     select('Project type','type',option('online','Online',project.type==='online')+option('offline','Offline',project.type==='offline')))+
-   select('Responsible partner','responsible',PARTNERS.map(p=>option(p,p,p===project.responsible)).join(''))+
+   subscriptionField(project)+select('Responsible partner','responsible',PARTNERS.map(p=>option(p,p,p===project.responsible)).join(''))+
    input('Start date','start_date','date',project.completed_on?'max="'+project.completed_on+'"':'')+
    optional('Repository link','repo_url','url',2000)+optional('Deployment link','deployment_url','url',2000)+
    '<label class="form-field full-width">Project details<textarea name="details" aria-label="Project details" maxlength="4000" rows="4">'+esc(project.details||'')+'</textarea></label>'+
@@ -68,7 +69,7 @@ export function formContent(action,data,selectedId,selectedPartner) {
   title='Renew annual subscription';description='This records another year of service. It does not record a fee or change contract payments.';submit='Confirm renewal';
   const period=currentSubscriptions(data).find(s=>s.project_id===selectedId);
   const start=period.expires_on>today()?period.expires_on:today();
-  body='<input type="hidden" name="project_id" value="'+esc(selectedId)+'"><div class="renew-summary full-width"><strong>'+esc(project.contract_id)+' · '+esc(project.name)+'</strong><p>New term: '+start+' → '+shiftMonths(start,12)+'</p></div>';
+  body='<input type="hidden" name="project_id" value="'+esc(selectedId)+'"><div class="renew-summary full-width"><strong>'+esc(project.contract_id)+' · '+esc(project.name)+'</strong><p>Year subscription amount: '+(project.annual_subscription_amount==null?'Not set — edit project':money(project.annual_subscription_amount))+'</p><p>New term: '+start+' → '+shiftMonths(start,12)+'</p></div>';
  }
  return '<div class="dialog-heading"><div><span class="section-index">RAYAN WORKSPACE</span><h2>'+title+'</h2></div><button class="icon-button" type="button" data-action="close-dialog" aria-label="Close">'+icon('close')+'</button></div><p class="dialog-description">'+description+'</p><form id="record-form" data-kind="'+action+'" data-request-id="'+crypto.randomUUID()+'"><div class="form-grid">'+body+'</div><p id="record-error" class="error" role="alert"></p><div class="dialog-footer"><button class="secondary" type="button" data-action="close-dialog">Cancel</button><button class="primary" type="submit">'+submit+' '+icon('check')+'</button></div></form>';
 }
@@ -81,7 +82,7 @@ export function projectDetails(project,data) {
  item('Repository',externalLink(project.repo_url,'Open repository'))+item('Deployment',externalLink(project.deployment_url,'Open deployment'))+
  item('Responsible',esc(project.responsible))+item('Project type',esc(project.type))+
  item('Start date',dateLabel(project.start_date))+item('Status',project.status==='done'?'Done':'Ongoing')+
- item('Contract total',money(project.amount))+item('Paid money',money(balance.received))+item('Remaining money',money(balance.remaining))+
+ (project.type==='online'?item('Year subscription amount',project.annual_subscription_amount==null?'Not set — edit project':money(project.annual_subscription_amount)):'')+item('Contract total',money(project.amount))+item('Paid money',money(balance.received))+item('Remaining money',money(balance.remaining))+
  '</dl><div class="project-notes"><h3>Project details</h3><p>'+esc(project.details||'No additional details.')+'</p></div>'+
  '<div class="dialog-footer"><button class="secondary" data-action="close-dialog">Close</button><button class="primary" data-action="edit_project" data-id="'+esc(project.id)+'">Edit project</button></div>';
 }

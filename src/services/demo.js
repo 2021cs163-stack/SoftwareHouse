@@ -9,19 +9,22 @@ export function demoAction(action,payload,requestId) {
  const amount=Number(payload.amount||0), date=payload.date||now;
  const project=data.projects.find(p=>p.id===payload.project_id);
  const requireMoney=()=>{if(cents(amount)<=0 || !Number.isFinite(amount)) throw new Error('Enter an amount greater than zero.');};
+ const annual=payload.type==='online'?payload.annual_subscription_amount:null;
+ if(['create_project','edit_project'].includes(action)&&annual!=null&&(!/^\d+(\.\d{1,2})?$/.test(String(annual))||Number(annual)>999999999999.99))throw new Error('Enter a valid year subscription amount.');
  if(action==='create_project') {
 
   const paid=Number(payload.paid_amount),remaining=Number(payload.remaining_amount);
   if(!Number.isFinite(paid)||!Number.isFinite(remaining)||paid<0||remaining<0||cents(paid)+cents(remaining)<=0)throw new Error('Enter valid paid and remaining amounts.');
   if(data.projects.some(p=>p.contract_id.toLowerCase()===payload.contract_id.toLowerCase()))throw new Error('This contract ID already exists.');
   const total=(cents(paid)+cents(remaining))/100;
-  data.projects.unshift({id,contract_id:payload.contract_id,name:payload.name,client:payload.client,client_contact:payload.client_contact||'',repo_url:payload.repo_url||'',deployment_url:payload.deployment_url||'',details:payload.details||'',type:payload.type,responsible:payload.responsible,start_date:payload.start_date,amount:total,status:'ongoing',completed_on:null,created_at:new Date().toISOString()});
+  data.projects.unshift({id,contract_id:payload.contract_id,name:payload.name,client:payload.client,client_contact:payload.client_contact||'',repo_url:payload.repo_url||'',deployment_url:payload.deployment_url||'',details:payload.details||'',type:payload.type,responsible:payload.responsible,start_date:payload.start_date,annual_subscription_amount:annual==null?null:Number(annual),amount:total,status:'ongoing',completed_on:null,created_at:new Date().toISOString()});
   if(paid>0)data.receipts.unshift({id:crypto.randomUUID(),project_id:id,amount:paid,date:payload.paid_date,note:'Payment recorded when project was added'});
  
  } else if(action==='edit_project') {
   if(!project)throw new Error('Project not found.');
   if(data.projects.some(p=>p.id!==project.id&&p.contract_id.toLowerCase()===payload.contract_id.toLowerCase()))throw new Error('This contract ID already exists.');
   if(project.status==='done'&&(project.type!==payload.type||payload.start_date>project.completed_on))throw new Error('Keep the completed project type and a start date before completion.');
+  project.annual_subscription_amount=annual==null?null:Number(annual);
   for(const key of ['name','contract_id','client','client_contact','repo_url','deployment_url','details','responsible','start_date','type'])project[key]=payload[key]||'';
  } else if(action==='complete_project') {
   if(!project || project.status==='done') throw new Error('This project is already complete.');

@@ -20,6 +20,10 @@ await dialog.getByLabel('Client contact').fill('+93 700 123 456');
 await dialog.getByLabel('Repository link').fill('https://github.com/example/atlas');
 await dialog.getByLabel('Deployment link').fill('https://atlas.example.com');
 await dialog.getByLabel('Project details',{exact:true}).fill('A customer portal with project tracking.');
+await dialog.getByLabel('Project type').selectOption('offline');
+assert.equal(await dialog.getByLabel('Year subscription amount (AFN)').isVisible(),false);
+await dialog.getByLabel('Project type').selectOption('online');
+await dialog.getByLabel('Year subscription amount (AFN)').fill('2500.50');
 await dialog.getByLabel('Paid money (AFN)').fill('35000');
 await dialog.getByLabel('Remaining money (AFN)').fill('65000');
 assert.match(await dialog.locator('#contract-total').innerText(),/100,000/);
@@ -59,6 +63,7 @@ await page.getByRole('link',{name:'Projects',exact:true}).click();
 
 await page.getByRole('button',{name:'Edit',exact:true}).click();
 dialog=page.getByRole('dialog');
+assert.equal(await dialog.getByLabel('Year subscription amount (AFN)').inputValue(),'2500.5');
 assert.equal(await dialog.getByLabel('Project name').inputValue(),'Atlas client portal');
 assert.equal(await dialog.getByLabel('Client contact').inputValue(),'+93 700 123 456');
 await dialog.getByLabel('Project details',{exact:true}).fill('Updated scope and delivery notes.');

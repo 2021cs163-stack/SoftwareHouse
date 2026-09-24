@@ -80,6 +80,10 @@ function validateForm(payload,action) {
    if(!['http:','https:'].includes(url.protocol))throw new Error('Project links must use https:// or http://.');
   }
  }
+ if(['create_project','edit_project'].includes(action)) {
+  if(payload.type==='online'&&(!/^\d+(\.\d{1,2})?$/.test(payload.annual_subscription_amount||'')||Number(payload.annual_subscription_amount)>999999999999.99))throw new Error('Enter a valid year subscription amount with up to two decimal places.');
+  if(payload.type==='offline')payload.annual_subscription_amount=null;
+ }
  if(action==='receive_payment') {
   const p=data.projects.find(p=>p.id===payload.project_id);
   if(!p)throw new Error('Select an unpaid project.');
@@ -153,6 +157,11 @@ app.addEventListener('input',event=>{
 });
 app.addEventListener('change',event=>{
  const form=event.target.form;if(!form)return;
+ if(event.target.name==='type') {
+  const input=form.elements.annual_subscription_amount;
+  const online=event.target.value==='online';
+  input.disabled=!online;input.required=online;input.closest('label').hidden=!online;
+ }
  if(event.target.name==='project_id'&&form.dataset.kind==='receive_payment'){
   const p=data.projects.find(p=>p.id===event.target.value);
   if(p){const remaining=projectBalance(p,data.receipts).remaining;document.querySelector('#balance-hint').textContent='Outstanding: '+money(remaining);form.elements.amount.value=remaining.toFixed(2);}

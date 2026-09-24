@@ -26,7 +26,7 @@ export function totals(data) {
   const netCents = cents(received)-cents(expenses);
   return { received, expenses, payouts, invested, net:netCents/100, cash:(netCents+cents(invested)-cents(payouts))/100,
     remaining:data.projects.reduce((n,p) => n+cents(projectBalance(p,data.receipts).remaining),0)/100,
-    share:Math.floor(Math.max(netCents,0)/4)/100 };
+    share:Math.floor(Math.max(netCents+cents(invested),0)/4)/100 };
 }
 export function partnerBalance(name,data) {
   const paid = sum(data.payouts.filter(p=>p.partner===name));

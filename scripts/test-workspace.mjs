@@ -1,3 +1,4 @@
+import { managementPage } from '../src/pages/management.js';
 import { PGlite } from '@electric-sql/pglite';
 import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
@@ -9,6 +10,7 @@ const period={expires_on:'2026-10-15'};
 assert.equal(subscriptionStatus(period,'2026-09-14'),'active');
 assert.equal(subscriptionStatus(period,'2026-09-15'),'expiring');
 assert.equal(subscriptionStatus(period,'2026-10-15'),'expired');
+const capitalOnly=emptyData();capitalOnly.investments=[{partner:PARTNERS[0],amount:5000}];assert.equal(totals(capitalOnly).cash,5000);assert.equal(partnerBalance(PARTNERS[0],capitalOnly).available,1250);
 const tiny=emptyData();tiny.receipts=[{amount:0.03}];assert.equal(totals(tiny).share,0);
 console.log('PASS: anniversary dates, one-month warning, exact expiry, and penny rounding.');
 
@@ -35,8 +37,10 @@ const legacyId='00000000-0000-4000-8000-000000000099';
 await db.query("insert into rayan_private.projects(id,contract_id,name,client,type,responsible,start_date,amount,created_by) values ($1,'LEGACY','Existing project','Legacy client','offline',$2,'2024-01-01',1234,$3)",[legacyId,PARTNERS[0],member]);
 await db.exec(await readFile(new URL('../supabase/migrations/202609150002_project_details_investments.sql',import.meta.url),'utf8'));
 await db.exec(await readFile(new URL('../supabase/migrations/202609150003_edit_projects.sql',import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('../supabase/migrations/202609240004_subscription_amount.sql',import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('../supabase/migrations/202609240005_partner_cash_shares.sql',import.meta.url),'utf8'));
 const legacy=(await db.query('select * from rayan_private.projects where id=$1',[legacyId])).rows[0];
-assert.equal(Number(legacy.amount),1234);assert.equal(legacy.client_contact,'');
+assert.equal(legacy.annual_subscription_amount,null);assert.equal(Number(legacy.amount),1234);assert.equal(legacy.client_contact,'');
 await db.query('delete from rayan_private.projects where id=$1',[legacyId]);
 console.log('PASS: upgrade preserves an existing project and balance.');
 await db.exec('set role anon');
@@ -50,10 +54,13 @@ console.log('PASS: anonymous, unapproved accounts, and direct table access denie
 const snapshot=async()=> (await db.query('select public.rayan_snapshot() as data')).rows[0].data;
 const action=async(kind,payload,id=crypto.randomUUID())=>db.query('select public.rayan_action($1,$2,$3)',[kind,JSON.stringify(payload),id]);
 const request=crypto.randomUUID();
-const payload={contract_id:'TEST-001',name:'Test website',client:'Test client',type:'online',responsible:PARTNERS[0],start_date:'2024-01-01',paid_amount:'500',remaining_amount:'500',paid_date:'2024-01-01',client_contact:'+93 700 000 000',repo_url:'https://github.com/example/project',deployment_url:'https://example.com',details:'Client portal scope'};
+const payload={annual_subscription_amount:'2500.50',contract_id:'TEST-001',name:'Test website',client:'Test client',type:'online',responsible:PARTNERS[0],start_date:'2024-01-01',paid_amount:'500',remaining_amount:'500',paid_date:'2024-01-01',client_contact:'+93 700 000 000',repo_url:'https://github.com/example/project',deployment_url:'https://example.com',details:'Client portal scope'};
 await action('create_project',payload,request);
 await action('create_project',payload,request);
 let data=await snapshot(), project=data.projects[0];
+assert.equal(Number(project.annual_subscription_amount),2500.50);
+await assert.rejects(action('create_project',{...payload,contract_id:'BAD-FEE',annual_subscription_amount:'-1'}),/subscription amount/);
+await assert.rejects(action('create_project',{...payload,contract_id:'BAD-FEE',annual_subscription_amount:'1.001'}),/subscription amount/);
 assert.equal(data.projects.length,1);assert.equal(data.receipts.length,1);
 assert.equal(project.client_contact,'+93 700 000 000');assert.equal(project.repo_url,payload.repo_url);assert.equal(project.details,payload.details);
 assert.equal(projectBalance(project,data.receipts).remaining,500);
@@ -71,6 +78,14 @@ console.log('PASS: manual paid and remaining balances, expenses, payout caps, du
 await action('complete_project',{project_id:project.id,date:'2024-02-29'});
 data=await snapshot();assert.equal(data.projects[0].status,'done');assert.equal(data.subscriptions[0].expires_on,'2025-02-28');
 assert.equal(notifications(data).length,2);
+const subscriptionHtml=managementPage('subscriptions',data,{search:'',status:'expired'});
+assert.match(subscriptionHtml,/Year subscription amount/);assert.match(subscriptionHtml,/Amount due/);
+assert.equal((subscriptionHtml.match(/AFN\s2,500\.50/g)||[]).length,2,'Expired row shows both annual fee and amount due');
+const unknown=structuredClone(data);unknown.projects[0].annual_subscription_amount=null;
+assert.match(managementPage('subscriptions',unknown,{search:'',status:'expired'}),/Not set — edit project/);
+const capitalHtml=managementPage('partners',capitalOnly,{search:'',status:'all'});
+assert.match(capitalHtml,/Available business cash/);assert.match(capitalHtml,/AFN\s5,000\.00/);assert.match(capitalHtml,/AFN\s1,250\.00/);
+
 await assert.rejects(action('complete_project',{project_id:project.id,date:'2024-03-01'}),/already complete/);
 await action('renew_subscription',{project_id:project.id});
 data=await snapshot();assert.equal(data.subscriptions.length,2);
@@ -79,6 +94,7 @@ await action('receive_payment',{project_id:project.id,amount:500,date:'2024-03-0
 data=await snapshot();assert.equal(totals(data).remaining,0);assert.equal(notifications(data).length,0);
 await action('create_project',{...payload,contract_id:'TEST-002',type:'offline',paid_amount:'0',remaining_amount:'1000'});
 data=await snapshot();const offline=data.projects.find(p=>p.type==='offline');
+assert.equal(offline.annual_subscription_amount,null);
 await action('complete_project',{project_id:offline.id,date:'2024-03-01'});
 data=await snapshot();assert.equal(data.subscriptions.length,2);
 await assert.rejects(action('renew_subscription',{project_id:offline.id}),/Only completed online/);
@@ -92,7 +108,7 @@ await action('add_investment',{partner:PARTNERS[1],amount:2000,date:'2024-03-02'
 await action('add_investment',{partner:PARTNERS[1],amount:2000,date:'2024-03-02',note:'Business capital'},investmentId);
 data=await snapshot();
 assert.equal(data.investments.length,1);assert.equal(totals(data).cash,before.cash+2000);
-assert.equal(totals(data).received,before.received);assert.equal(totals(data).share,before.share);
+assert.equal(totals(data).received,before.received);assert.equal(totals(data).share,before.share+500);
 assert.equal(partnerBalance(PARTNERS[1],data).invested,2000);
 await assert.rejects(action('add_investment',{partner:PARTNERS[0],amount:-10}),/greater than zero/);
 await assert.rejects(action('add_investment',{partner:PARTNERS[0],amount:'NaN'}),/greater than zero/);
@@ -111,7 +127,7 @@ await assert.rejects(action('create_project',{...payload,contract_id:'INVALID',p
 await assert.rejects(action('create_project',{...payload,contract_id:'INVALID',paid_amount:'0',remaining_amount:'0'}),/greater than zero/);
 await assert.rejects(action('create_project',{...payload,contract_id:'INVALID',paid_amount:'1.001',remaining_amount:'100'}),/Enter paid/);
 await assert.rejects(action('create_project',{...payload,contract_id:'INVALID',repo_url:'javascript:alert(1)'}),/check constraint/);
-console.log('PASS: investments increase cash but not profits; duplicates and invalid capital rejected; arbitrary/manual/full/unpaid balances and safe project links.');
+console.log('PASS: investments increase cash and equal partner shares; duplicates and invalid capital rejected; arbitrary/manual/full/unpaid balances and safe project links.');
 
 await db.exec('reset role');
 
@@ -120,13 +136,13 @@ data=await snapshot();
 const original=data.projects.find(p=>p.id===project.id);
 const beforeEdit=totals(data),receiptCount=data.receipts.length,terms=JSON.stringify(data.subscriptions);
 const editId=crypto.randomUUID();
-const editPayload={...original,name:'Updated project',client_contact:'+93 711 222 333',details:'Added delivery notes',repo_url:'https://github.com/example/updated'};
+const editPayload={...original,annual_subscription_amount:'3000.75',name:'Updated project',client_contact:'+93 711 222 333',details:'Added delivery notes',repo_url:'https://github.com/example/updated'};
 const updateProject=(payload,id=crypto.randomUUID())=>db.query('select public.rayan_update_project($1,$2)',[JSON.stringify(payload),id]);
 await updateProject({...editPayload,project_id:original.id},editId);
 await updateProject({...editPayload,project_id:original.id},editId);
 data=await snapshot();
 const edited=data.projects.find(p=>p.id===original.id);
-assert.equal(edited.name,'Updated project');assert.equal(edited.details,'Added delivery notes');
+assert.equal(Number(edited.annual_subscription_amount),3000.75);assert.equal(edited.name,'Updated project');assert.equal(edited.details,'Added delivery notes');
 assert.equal(edited.client_contact,'+93 711 222 333');assert.equal(edited.repo_url,editPayload.repo_url);
 assert.deepEqual(totals(data),beforeEdit);assert.equal(data.receipts.length,receiptCount);
 assert.equal(JSON.stringify(data.subscriptions),terms);assert.equal(edited.status,original.status);
@@ -139,6 +155,19 @@ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[stranger])
 await assert.rejects(updateProject({...editPayload,project_id:original.id}),/not approved/);
 await db.query("select set_config('request.jwt.claim.sub',$1,false)",[member]);
 console.log('PASS: edit project details, duplicate retry, preserved money/subscriptions, and access/validation safeguards.');
+// All partners can withdraw their full share sequentially without shrinking others' entitlement.
+data=await snapshot();
+for(const name of PARTNERS) {
+ const available=partnerBalance(name,data).available;
+ const others=PARTNERS.filter(p=>p!==name).map(p=>partnerBalance(p,data).available);
+ await action('pay_partner',{partner:name,amount:available,date:'2024-03-03'});
+ data=await snapshot();
+ assert.equal(partnerBalance(name,data).available,0);
+ assert.deepEqual(PARTNERS.filter(p=>p!==name).map(p=>partnerBalance(p,data).available),others);
+ await assert.rejects(action('pay_partner',{partner:name,amount:0.01,date:'2024-03-03'}),/exceeds/);
+}
+assert.ok(totals(data).cash>=0&&totals(data).cash<0.04);
+console.log('PASS: full equal cash distributions, previous payouts deducted, no repeated withdrawal, penny remainder retained.');
 await db.exec('reset role');
 await db.query('update rayan_private.members set active=false where user_id=$1',[member]);
 await db.exec('set role authenticated');
