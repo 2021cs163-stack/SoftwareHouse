@@ -1,0 +1,68 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.20.0
+2 info using node@v26.13.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\user\Desktop\SoftwareHouse\.npmrc
+5 silly config load:file:C:\Users\user\.npmrc
+6 silly config load:file:C:\Users\user\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm ci
+8 verbose argv "ci" "--ignore-scripts" "--no-audit" "--no-fund" "--cache" ".openai/npm-cache" "--prefer-offline"
+9 verbose logfile logs-max:10 dir:C:\Users\user\Desktop\SoftwareHouse\.openai\npm-cache\_logs\2026-11-16T09_49_21_110Z-
+10 verbose logfile C:\Users\user\Desktop\SoftwareHouse\.openai\npm-cache\_logs\2026-11-16T09_49_21_110Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4395630592 maxSize:1098907648 maxEntrySize:549453824
+13 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with ENOTFOUND
+14 silly packumentCache heap:4395630592 maxSize:1098907648 maxEntrySize:549453824
+15 silly idealTree buildDeps
+16 silly reify moves {}
+17 http cache @playwright/test@https://registry.npmjs.org/@playwright/test/-/test-1.63.0.tgz 1ms (cache hit)
+18 http cache playwright-core@https://registry.npmjs.org/playwright-core/-/playwright-core-1.63.0.tgz 0ms (cache hit)
+19 http cache playwright@https://registry.npmjs.org/playwright/-/playwright-1.63.0.tgz 0ms (cache hit)
+20 http cache @electric-sql/pglite@https://registry.npmjs.org/@electric-sql/pglite/-/pglite-0.5.8.tgz 0ms (cache hit)
+21 silly tarball no local data for @playwright/test@https://registry.npmjs.org/@playwright/test/-/test-1.63.0.tgz. Extracting by manifest.
+22 silly tarball no local data for playwright-core@https://registry.npmjs.org/playwright-core/-/playwright-core-1.63.0.tgz. Extracting by manifest.
+23 silly tarball no local data for playwright@https://registry.npmjs.org/playwright/-/playwright-1.63.0.tgz. Extracting by manifest.
+24 silly tarball no local data for @electric-sql/pglite@https://registry.npmjs.org/@electric-sql/pglite/-/pglite-0.5.8.tgz. Extracting by manifest.
+25 http fetch GET https://registry.npmjs.org/@playwright/test/-/test-1.63.0.tgz attempt 1 failed with ENOTFOUND
+26 http fetch GET https://registry.npmjs.org/playwright-core/-/playwright-core-1.63.0.tgz attempt 1 failed with ENOTFOUND
+27 http fetch GET https://registry.npmjs.org/playwright/-/playwright-1.63.0.tgz attempt 1 failed with ENOTFOUND
+28 http fetch GET https://registry.npmjs.org/@electric-sql/pglite/-/pglite-0.5.8.tgz attempt 1 failed with ENOTFOUND
+29 http fetch GET https://registry.npmjs.org/npm attempt 2 failed with ENOTFOUND
+30 http fetch GET https://registry.npmjs.org/@playwright/test/-/test-1.63.0.tgz attempt 2 failed with ENOTFOUND
+31 http fetch GET https://registry.npmjs.org/playwright-core/-/playwright-core-1.63.0.tgz attempt 2 failed with ENOTFOUND
+32 http fetch GET https://registry.npmjs.org/playwright/-/playwright-1.63.0.tgz attempt 2 failed with ENOTFOUND
+33 http fetch GET https://registry.npmjs.org/@electric-sql/pglite/-/pglite-0.5.8.tgz attempt 2 failed with ENOTFOUND
+34 http fetch GET https://registry.npmjs.org/npm attempt 3 failed with ENOTFOUND
+35 http fetch GET https://registry.npmjs.org/@playwright/test/-/test-1.63.0.tgz attempt 3 failed with ENOTFOUND
+36 http fetch GET https://registry.npmjs.org/playwright-core/-/playwright-core-1.63.0.tgz attempt 3 failed with ENOTFOUND
+37 http fetch GET https://registry.npmjs.org/playwright/-/playwright-1.63.0.tgz attempt 3 failed with ENOTFOUND
+38 http fetch GET https://registry.npmjs.org/@electric-sql/pglite/-/pglite-0.5.8.tgz attempt 3 failed with ENOTFOUND
+39 verbose type system
+40 verbose stack FetchError: request to https://registry.npmjs.org/playwright-core/-/playwright-core-1.63.0.tgz failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org
+40 verbose stack     at ClientRequest.<anonymous> (C:\Program Files\nodejs\node_modules\npm\node_modules\minipass-fetch\lib\index.js:130:14)
+40 verbose stack     at ClientRequest.emit (node:events:514:20)
+40 verbose stack     at emitErrorEvent (node:_http_client:115:11)
+40 verbose stack     at _destroy (node:_http_client:1198:9)
+40 verbose stack     at onSocketNT (node:_http_client:1219:5)
+40 verbose stack     at process.processTicksAndRejections (node:internal/process/task_queues:91:21)
+41 error code ENOTFOUND
+42 error syscall getaddrinfo
+43 error errno ENOTFOUND
+44 error network request to https://registry.npmjs.org/playwright-core/-/playwright-core-1.63.0.tgz failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org
+45 error network This is a problem related to network connectivity.
+45 error network In most cases you are behind a proxy or have bad network settings.
+45 error network
+45 error network If you are behind a proxy, please make sure that the 'proxy' config is set properly.  See: 'npm help config'
+46 silly unfinished npm timer reify 1794822567496
+47 silly unfinished npm timer reify:unpack 1794822567548
+48 silly unfinished npm timer reifyNode:node_modules/playwright-core 1794822567548
+49 silly unfinished npm timer reifyNode:node_modules/playwright 1794822567548
+50 silly unfinished npm timer reifyNode:node_modules/@playwright/test 1794822567548
+51 silly unfinished npm timer reifyNode:node_modules/@electric-sql/pglite 1794822567548
+52 verbose cwd C:\Users\user\Desktop\SoftwareHouse
+53 verbose os Windows_NT 10.0.26100
+54 verbose node v26.13.0
+55 verbose npm  v11.20.0
+56 verbose exit 1
+57 verbose code 1
+58 error A complete log of this run can be found in: C:\Users\user\Desktop\SoftwareHouse\.openai\npm-cache\_logs\2026-11-16T09_49_21_110Z-debug-0.log
